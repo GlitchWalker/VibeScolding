@@ -5,8 +5,8 @@
 // @match       https://chatgpt.com/*
 // @grant       GM_setValue
 // @grant       GM_getValue
-// @version     4.5
-// @description Persistent dark menubar, native responsiveness, InteropDebug integrated.
+// @version     4.6
+// @description InteropDebug active, responsive mobile menu, HTML-level offset layout engine.
 // ==/UserScript==
 
 /* --- InteropDebug Module Start --- */
@@ -15,7 +15,6 @@ const InteropDebug = true; // Set to false to disable
 (function(debugEnabled) {
     if (!debugEnabled) return;
 
-    // Register this script as "in debug mode" on the global window object
     window.__INTEROP_DEBUG_REGISTRY__ = window.__INTEROP_DEBUG_REGISTRY__ || [];
     window.__INTEROP_DEBUG_REGISTRY__.push({
         name: GM_info ? GM_info.script.name : 'Unknown Script',
@@ -27,7 +26,6 @@ const InteropDebug = true; // Set to false to disable
         console.log(`[InteropDebug][${scriptName}][${level}]`, msg);
     };
 
-    // Monitor for other scripts in debug mode
     setInterval(() => {
         const others = window.__INTEROP_DEBUG_REGISTRY__ || [];
         if (others.length > 1) {
@@ -35,7 +33,6 @@ const InteropDebug = true; // Set to false to disable
         }
     }, 5000);
 
-    // Expose methods to the window for cross-script interaction
     window.InteropDebugActions = window.InteropDebugActions || {
         scanForConflicts: () => {
             log("Running conflict scan...");
@@ -211,9 +208,9 @@ const InteropDebug = true; // Set to false to disable
         if (document.getElementById('fast-chat-global-styles')) { return; }
         const style = document.createElement('style');
         style.id = 'fast-chat-global-styles';
-        // Isolated CSS: Only pads the body and targets unique script IDs. No host DOM interference.
+        // HTML shift strategy avoids Angular bounding-box crashes
         style.textContent = `
-            body { padding-top: 45px !important; }
+            html { margin-top: 45px !important; }
             
             #fast-chat-menubar { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 45px !important; background: #1a1a1a !important; display: flex !important; align-items: center !important; justify-content: space-between !important; padding: 0 20px !important; z-index: 2147483647 !important; border-bottom: 1px solid #333 !important; font-family: "Montserrat", sans-serif !important; box-sizing: border-box !important; }
             
@@ -237,7 +234,8 @@ const InteropDebug = true; // Set to false to disable
                 #fast-chat-nav-container.fc-menu-open { display: flex !important; }
             }
         `;
-        document.head.appendChild(style);
+        // Append to documentElement (html) so it applies at the absolute root level
+        document.documentElement.appendChild(style);
     };
 
     const initMenubar = () => {
@@ -296,7 +294,8 @@ const InteropDebug = true; // Set to false to disable
         
         menubar.appendChild(leftGroup);
         menubar.appendChild(actionBtn);
-        document.body.prepend(menubar);
+        // Anchor to the html node rather than body to sit in the new margin gap safely
+        document.documentElement.appendChild(menubar);
     };
 
     const observer = new MutationObserver(() => initMenubar());
