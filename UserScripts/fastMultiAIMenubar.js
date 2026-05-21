@@ -10,6 +10,49 @@
 // @updateURL    https://raw.githubusercontent.com/GlitchWalker/VibeScolding/refs/heads/main/UserScripts/fastMultiAIMenubar.js
 // ==/UserScript==
 
+/* --- InteropDebug Module Start --- */
+const InteropDebug = true; // Set to false to disable
+
+(function(debugEnabled) {
+    if (!debugEnabled) return;
+
+    // Register this script as "in debug mode" on the global window object
+    window.__INTEROP_DEBUG_REGISTRY__ = window.__INTEROP_DEBUG_REGISTRY__ || [];
+    window.__INTEROP_DEBUG_REGISTRY__.push({
+        name: GM_info.script.name,
+        timestamp: Date.now()
+    });
+
+    const log = (msg, level = 'INFO') => {
+        console.log(`[InteropDebug][${GM_info.script.name}][${level}]`, msg);
+    };
+
+    // Monitor for other scripts in debug mode
+    setInterval(() => {
+        const others = window.__INTEROP_DEBUG_REGISTRY__ || [];
+        if (others.length > 1) {
+            // Optional: Log if multiple scripts are fighting for the same DOM nodes
+        }
+    }, 5000);
+
+    // Expose methods to the window for cross-script interaction
+    window.InteropDebugActions = {
+        scanForConflicts: () => {
+            log("Running conflict scan...");
+            // Example: Check for known DOM overhead issues
+            const scripts = document.querySelectorAll('script');
+            log(`Current page has ${scripts.length} script tags.`);
+        },
+        reportPerformance: () => {
+            const perf = performance.now();
+            log(`Script initialized at ${perf.toFixed(2)}ms`);
+        }
+    };
+
+    log("Active. Monitoring for other InteropDebug scripts.");
+})(InteropDebug);
+/* --- InteropDebug Module End --- */
+
 (function() {
   'use strict';
 
