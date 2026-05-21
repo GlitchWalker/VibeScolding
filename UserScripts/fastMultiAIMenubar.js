@@ -1,16 +1,15 @@
 // ==UserScript==
 // @name        Fast Multi-AI Menubar
-// @namespace   FireMonkeyScripts
 // @match       https://gemini.google.com/*
 // @match       https://chatgpt.com/*
 // @grant       GM_setValue
 // @grant       GM_getValue
-// @version     4.7
-// @description InteropDebug active, split action buttons, dynamic Save state, Do Coding macro.
+// @version     4.8
+// @description InteropDebug active, Ghost-Click native triggers, Mobile Dropdown, Macro buttons.
 // ==/UserScript==
 
 /* --- InteropDebug Module Start --- */
-const InteropDebug = true; // Set to false to disable
+const InteropDebug = true; 
 
 (function(debugEnabled) {
     if (!debugEnabled) return;
@@ -196,6 +195,25 @@ const InteropDebug = true; // Set to false to disable
         document.body.appendChild(modal);
     };
 
+    // --- Ghost Click Engine ---
+    const passThroughClick = (e) => {
+        const menubar = document.getElementById('fast-chat-menubar');
+        if (!menubar) return;
+        
+        // Hide menubar from hit-testing
+        const oldVis = menubar.style.visibility;
+        menubar.style.visibility = 'hidden';
+        
+        // Grab the native Google/OpenAI element under the mouse coordinates
+        const targetElement = document.elementFromPoint(e.clientX, e.clientY);
+        
+        // Fire native click
+        if (targetElement) { targetElement.click(); }
+        
+        // Restore menubar
+        menubar.style.visibility = oldVis;
+    };
+
     const injectHardenedStyles = () => {
         if (!document.getElementById('fast-chat-font')) {
             const fontLink = document.createElement('link');
@@ -211,128 +229,9 @@ const InteropDebug = true; // Set to false to disable
         style.textContent = `
             html { margin-top: 45px !important; }
             
-            #fast-chat-menubar { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 45px !important; background: #1a1a1a !important; display: flex !important; align-items: center !important; justify-content: space-between !important; padding: 0 20px !important; z-index: 2147483647 !important; border-bottom: 1px solid #333 !important; font-family: "Montserrat", sans-serif !important; box-sizing: border-box !important; }
+            #fast-chat-menubar { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 45px !important; background: #1a1a1a !important; display: flex !important; align-items: center !important; justify-content: space-between !important; padding: 0 15px !important; z-index: 2147483647 !important; border-bottom: 1px solid #333 !important; font-family: "Montserrat", sans-serif !important; box-sizing: border-box !important; }
             
             .fc-left-group { display: flex !important; align-items: center !important; gap: 15px !important; flex-grow: 1 !important; }
-            #fast-chat-nav-container { display: flex !important; gap: 20px !important; align-items: center !important; }
             
-            .fc-nav-link { color: #888 !important; text-decoration: none !important; font-size: 15px !important; font-weight: 400 !important; transition: color 0.2s !important; letter-spacing: 0.5px !important; font-family: "Montserrat", sans-serif !important; }
-            .fc-nav-link:hover { color: #ccc !important; }
-            
-            #fast-chat-menubar[data-platform="gemini"] a[href*="gemini.google.com"] { color: #16a34a !important; font-weight: 700 !important; }
-            #fast-chat-menubar[data-platform="chatgpt"] a[href*="chatgpt.com"] { color: #ffffff !important; font-weight: 700 !important; }
-            
-            .fc-action-group { display: flex !important; gap: 10px !important; align-items: center !important; flex-shrink: 0 !important; }
-            .fc-action-btn { font-family: "Montserrat", sans-serif !important; padding: 6px 12px !important; background: #333 !important; color: #fff !important; border: 1px solid #555 !important; border-radius: 4px !important; cursor: pointer !important; font-size: 12px !important; font-weight: 600 !important; transition: background 0.2s, opacity 0.2s !important; white-space: nowrap !important; } 
-            .fc-action-btn:hover:not(:disabled) { background: #444 !important; }
-            .fc-action-btn:disabled { opacity: 0.4 !important; cursor: not-allowed !important; background: #222 !important; border-color: #444 !important; }
-
-            #fast-chat-menu-toggle { display: none !important; background: transparent !important; border: none !important; color: #ccc !important; font-size: 22px !important; cursor: pointer !important; line-height: 1 !important; padding: 0 !important; font-family: "Montserrat", sans-serif !important; }
-            
-            @media (max-width: 768px) {
-                #fast-chat-menu-toggle { display: block !important; }
-                #fast-chat-nav-container { display: none !important; flex-direction: column !important; position: absolute !important; top: 45px !important; left: 0 !important; width: 100% !important; background: #1a1a1a !important; border-bottom: 1px solid #333 !important; padding: 15px 20px !important; box-sizing: border-box !important; gap: 15px !important; align-items: flex-start !important; }
-                #fast-chat-nav-container.fc-menu-open { display: flex !important; }
-                .fc-action-btn { padding: 6px 8px !important; font-size: 11px !important; }
-            }
-        `;
-        document.documentElement.appendChild(style);
-    };
-
-    const initMenubar = () => {
-        if (document.getElementById('fast-chat-menubar')) { return; }
-        
-        injectHardenedStyles();
-
-        const menubar = document.createElement('header');
-        menubar.id = 'fast-chat-menubar';
-
-        const currentHost = window.location.hostname;
-        const platformMode = (currentHost.indexOf('gemini.google') !== -1) ? 'gemini' : 'chatgpt';
-        menubar.setAttribute('data-platform', platformMode);
-
-        // --- Left Group (Navigation) ---
-        const leftGroup = document.createElement('div');
-        leftGroup.className = 'fc-left-group';
-
-        const toggleBtn = document.createElement('button');
-        toggleBtn.id = 'fast-chat-menu-toggle';
-        toggleBtn.textContent = '☰';
-        toggleBtn.onclick = () => {
-            const nav = document.getElementById('fast-chat-nav-container');
-            if (nav) { nav.classList.toggle('fc-menu-open'); }
-        };
-        leftGroup.appendChild(toggleBtn);
-
-        const nav = document.createElement('nav');
-        nav.id = 'fast-chat-nav-container';
-        
-        const links = [
-            { name: 'Gemini', url: 'https://gemini.google.com/' },
-            { name: 'ChatGPT', url: 'https://chatgpt.com/' }
-        ];
-
-        for (let i = 0; i < links.length; i++) {
-            const link = links[i];
-            const a = document.createElement('a');
-            a.textContent = link.name;
-            a.setAttribute('href', link.url);
-            a.className = 'fc-nav-link';
-            nav.appendChild(a);
-        }
-        
-        leftGroup.appendChild(nav);
-
-        // --- Right Group (Actions) ---
-        const actionGroup = document.createElement('div');
-        actionGroup.className = 'fc-action-group';
-
-        const btnCoding = document.createElement('button');
-        btnCoding.className = 'fc-action-btn';
-        btnCoding.textContent = '💻 Do coding';
-        btnCoding.onclick = () => {
-            const codingPrompt = "You are an expert software developer and system architect. Please adhere strictly to coding best practices, secure architecture, and optimal performance. Deliver complete, fully-functional code implementations without using placeholders or omitting logic. Await the specifications below.\n\nLanguage: \nProject: \n\n";
-            navigator.clipboard.writeText(codingPrompt);
-            btnCoding.textContent = '✅ Copied';
-            setTimeout(() => { btnCoding.textContent = '💻 Do coding'; }, 2000);
-        };
-
-        const btnSave = document.createElement('button');
-        btnSave.id = 'fast-chat-btn-save';
-        btnSave.className = 'fc-action-btn';
-        btnSave.textContent = '💾 Save';
-        
-        const btnLoad = document.createElement('button');
-        btnLoad.className = 'fc-action-btn';
-        btnLoad.textContent = '📂 Load';
-        btnLoad.onclick = () => { showLoadMenu(); };
-
-        actionGroup.appendChild(btnCoding);
-        actionGroup.appendChild(btnSave);
-        actionGroup.appendChild(btnLoad);
-
-        menubar.appendChild(leftGroup);
-        menubar.appendChild(actionGroup);
-        document.documentElement.appendChild(menubar);
-    };
-
-    // Continuous state polling via the observer to toggle the Save button dynamically
-    const observer = new MutationObserver(() => {
-        initMenubar();
-        
-        const btnSave = document.getElementById('fast-chat-btn-save');
-        if (btnSave) {
-            const exists = isExistingChat();
-            if (!exists) {
-                btnSave.disabled = true;
-                btnSave.onclick = null;
-            } else {
-                btnSave.disabled = false;
-                btnSave.onclick = () => { saveChat(btnSave); };
-            }
-        }
-    });
-    
-    observer.observe(document.body, { childList: true, subtree: true });
-    initMenubar();
-})();
+            /* Native Triggers (Hidden by default, shown via attribute) */
+            .fc-native-trigger { display: none !important; align-items: center !important; justify-content: center !important; background: transparent !important; color: #ccc !important; border: 1px solid transparent !important; border-radius: 4px !important; cursor: pointer !important; font-size: 18
