@@ -1,7 +1,7 @@
 # VibeScolding Experiments
 My coding experiments. Unless otherwise stated, these are most likely generated as vibe-codes (Using either Qwencoder locally, Gemini or Claude remotely), mostly as a learning experience for myself.
 
-I've decided I'll also update with my setup and maybe even some guides at some point (e.g. setting up lm-studio with Continue.Dev, as it's not always as clear as other AI providers)
+I've decided I'll also update with my setup and maybe even some guides at some point (e.g. setting up lm-studio with Continue.Dev, as it's not always as clear as other AI providers). Any guides will be written by myself, with the only computer-aided help from spell and grammar checking (as it feels weird to AI generate a guide, especially when about half the time AI is incorrect or I need to translate)
 
 # My Local Setup
 - **Visual Studio Code**
