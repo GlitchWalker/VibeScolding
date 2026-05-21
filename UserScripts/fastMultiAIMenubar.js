@@ -5,8 +5,8 @@
 // @match       https://chatgpt.com/*
 // @grant       GM_setValue
 // @grant       GM_getValue
-// @version     4.6
-// @description InteropDebug active, responsive mobile menu, HTML-level offset layout engine.
+// @version     4.7
+// @description InteropDebug active, split action buttons, dynamic Save state, Do Coding macro.
 // ==/UserScript==
 
 /* --- InteropDebug Module Start --- */
@@ -208,7 +208,6 @@ const InteropDebug = true; // Set to false to disable
         if (document.getElementById('fast-chat-global-styles')) { return; }
         const style = document.createElement('style');
         style.id = 'fast-chat-global-styles';
-        // HTML shift strategy avoids Angular bounding-box crashes
         style.textContent = `
             html { margin-top: 45px !important; }
             
@@ -223,8 +222,10 @@ const InteropDebug = true; // Set to false to disable
             #fast-chat-menubar[data-platform="gemini"] a[href*="gemini.google.com"] { color: #16a34a !important; font-weight: 700 !important; }
             #fast-chat-menubar[data-platform="chatgpt"] a[href*="chatgpt.com"] { color: #ffffff !important; font-weight: 700 !important; }
             
-            #fast-chat-action-btn { font-family: "Montserrat", sans-serif !important; padding: 6px 14px !important; background: #333 !important; color: #fff !important; border: 1px solid #555 !important; border-radius: 4px !important; cursor: pointer !important; font-size: 13px !important; font-weight: 600 !important; transition: background 0.2s !important; flex-shrink: 0 !important; } 
-            #fast-chat-action-btn:hover { background: #444 !important; }
+            .fc-action-group { display: flex !important; gap: 10px !important; align-items: center !important; flex-shrink: 0 !important; }
+            .fc-action-btn { font-family: "Montserrat", sans-serif !important; padding: 6px 12px !important; background: #333 !important; color: #fff !important; border: 1px solid #555 !important; border-radius: 4px !important; cursor: pointer !important; font-size: 12px !important; font-weight: 600 !important; transition: background 0.2s, opacity 0.2s !important; white-space: nowrap !important; } 
+            .fc-action-btn:hover:not(:disabled) { background: #444 !important; }
+            .fc-action-btn:disabled { opacity: 0.4 !important; cursor: not-allowed !important; background: #222 !important; border-color: #444 !important; }
 
             #fast-chat-menu-toggle { display: none !important; background: transparent !important; border: none !important; color: #ccc !important; font-size: 22px !important; cursor: pointer !important; line-height: 1 !important; padding: 0 !important; font-family: "Montserrat", sans-serif !important; }
             
@@ -232,9 +233,9 @@ const InteropDebug = true; // Set to false to disable
                 #fast-chat-menu-toggle { display: block !important; }
                 #fast-chat-nav-container { display: none !important; flex-direction: column !important; position: absolute !important; top: 45px !important; left: 0 !important; width: 100% !important; background: #1a1a1a !important; border-bottom: 1px solid #333 !important; padding: 15px 20px !important; box-sizing: border-box !important; gap: 15px !important; align-items: flex-start !important; }
                 #fast-chat-nav-container.fc-menu-open { display: flex !important; }
+                .fc-action-btn { padding: 6px 8px !important; font-size: 11px !important; }
             }
         `;
-        // Append to documentElement (html) so it applies at the absolute root level
         document.documentElement.appendChild(style);
     };
 
@@ -250,6 +251,7 @@ const InteropDebug = true; // Set to false to disable
         const platformMode = (currentHost.indexOf('gemini.google') !== -1) ? 'gemini' : 'chatgpt';
         menubar.setAttribute('data-platform', platformMode);
 
+        // --- Left Group (Navigation) ---
         const leftGroup = document.createElement('div');
         leftGroup.className = 'fc-left-group';
 
@@ -281,24 +283,56 @@ const InteropDebug = true; // Set to false to disable
         
         leftGroup.appendChild(nav);
 
-        const actionBtn = document.createElement('button');
-        actionBtn.id = 'fast-chat-action-btn';
-        
-        const updateButton = () => {
-            const exists = isExistingChat();
-            actionBtn.textContent = exists ? '💾 Save' : '📂 Load';
-            actionBtn.onclick = exists ? () => { saveChat(actionBtn); } : () => { showLoadMenu(); };
+        // --- Right Group (Actions) ---
+        const actionGroup = document.createElement('div');
+        actionGroup.className = 'fc-action-group';
+
+        const btnCoding = document.createElement('button');
+        btnCoding.className = 'fc-action-btn';
+        btnCoding.textContent = '💻 Do coding';
+        btnCoding.onclick = () => {
+            const codingPrompt = "You are an expert software developer and system architect. Please adhere strictly to coding best practices, secure architecture, and optimal performance. Deliver complete, fully-functional code implementations without using placeholders or omitting logic. Await the specifications below.\n\nLanguage: \nProject: \n\n";
+            navigator.clipboard.writeText(codingPrompt);
+            btnCoding.textContent = '✅ Copied';
+            setTimeout(() => { btnCoding.textContent = '💻 Do coding'; }, 2000);
         };
 
-        updateButton();
+        const btnSave = document.createElement('button');
+        btnSave.id = 'fast-chat-btn-save';
+        btnSave.className = 'fc-action-btn';
+        btnSave.textContent = '💾 Save';
         
+        const btnLoad = document.createElement('button');
+        btnLoad.className = 'fc-action-btn';
+        btnLoad.textContent = '📂 Load';
+        btnLoad.onclick = () => { showLoadMenu(); };
+
+        actionGroup.appendChild(btnCoding);
+        actionGroup.appendChild(btnSave);
+        actionGroup.appendChild(btnLoad);
+
         menubar.appendChild(leftGroup);
-        menubar.appendChild(actionBtn);
-        // Anchor to the html node rather than body to sit in the new margin gap safely
+        menubar.appendChild(actionGroup);
         document.documentElement.appendChild(menubar);
     };
 
-    const observer = new MutationObserver(() => initMenubar());
+    // Continuous state polling via the observer to toggle the Save button dynamically
+    const observer = new MutationObserver(() => {
+        initMenubar();
+        
+        const btnSave = document.getElementById('fast-chat-btn-save');
+        if (btnSave) {
+            const exists = isExistingChat();
+            if (!exists) {
+                btnSave.disabled = true;
+                btnSave.onclick = null;
+            } else {
+                btnSave.disabled = false;
+                btnSave.onclick = () => { saveChat(btnSave); };
+            }
+        }
+    });
+    
     observer.observe(document.body, { childList: true, subtree: true });
     initMenubar();
 })();
