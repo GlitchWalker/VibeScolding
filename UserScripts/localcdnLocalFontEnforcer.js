@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         LocalCDN Font Route Enforcer (Mozilla Text)
 // @namespace    http://tampermonkey.net/
-// @version      2.1
+// @version      2.2
 // @description  Forces external font requests into LocalCDN hooks, prioritizing Mozilla Text.
 // @author       Gemini
 // @match        *://*/*

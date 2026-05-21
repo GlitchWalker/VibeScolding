@@ -4,7 +4,7 @@
 // @match       https://chatgpt.com/*
 // @grant       GM_setValue
 // @grant       GM_getValue
-// @version     4.4
+// @version     4.5
 // @description Persistent dark menubar with dynamic collapsible mobile link layout. Includes saving full conversations to a database, and the ability to copy these entire conversations into a new chat with appropriate formatting for the "destination" AI to understand it.
 // @downloadURL  https://raw.githubusercontent.com/GlitchWalker/VibeScolding/refs/heads/main/UserScripts/fastMultiAIMenubar.js
 // @updateURL    https://raw.githubusercontent.com/GlitchWalker/VibeScolding/refs/heads/main/UserScripts/fastMultiAIMenubar.js
