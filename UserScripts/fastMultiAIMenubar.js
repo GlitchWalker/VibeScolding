@@ -1,6 +1,5 @@
 // ==UserScript==
 // @name        Fast Multi-AI Menubar
-// @namespace   FireMonkeyScripts
 // @match       https://gemini.google.com/*
 // @match       https://chatgpt.com/*
 // @grant       GM_setValue
