@@ -7,6 +7,9 @@
 // @match        *://*/*
 // @run-at       document-start
 // @grant        GM_addStyle
+// @downloadURL  https://raw.githubusercontent.com/GlitchWalker/VibeScolding/refs/heads/main/UserScripts/localcdnLocalFontEnforcer.js
+// @updateURL    https://raw.githubusercontent.com/GlitchWalker/VibeScolding/refs/heads/main/UserScripts/localcdnLocalFontEnforcer.js
+
 // ==/UserScript==
 
 (function() {
