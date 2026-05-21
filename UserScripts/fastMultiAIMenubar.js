@@ -4,8 +4,8 @@
 // @match       https://chatgpt.com/*
 // @grant       GM_setValue
 // @grant       GM_getValue
-// @version     4.8
-// @description InteropDebug active, Ghost-Click native triggers, Mobile Dropdown, Macro buttons.
+// @version     4.10
+// @description InteropDebug active, Trusted Types compliant, Offset Ghost-Click, Namespace removed.
 // ==/UserScript==
 
 /* --- InteropDebug Module Start --- */
@@ -195,22 +195,13 @@ const InteropDebug = true;
         document.body.appendChild(modal);
     };
 
-    // --- Ghost Click Engine ---
     const passThroughClick = (e) => {
         const menubar = document.getElementById('fast-chat-menubar');
         if (!menubar) return;
-        
-        // Hide menubar from hit-testing
         const oldVis = menubar.style.visibility;
         menubar.style.visibility = 'hidden';
-        
-        // Grab the native Google/OpenAI element under the mouse coordinates
-        const targetElement = document.elementFromPoint(e.clientX, e.clientY);
-        
-        // Fire native click
+        const targetElement = document.elementFromPoint(e.clientX, e.clientY + 45);
         if (targetElement) { targetElement.click(); }
-        
-        // Restore menubar
         menubar.style.visibility = oldVis;
     };
 
@@ -228,10 +219,124 @@ const InteropDebug = true;
         style.id = 'fast-chat-global-styles';
         style.textContent = `
             html { margin-top: 45px !important; }
-            
             #fast-chat-menubar { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 45px !important; background: #1a1a1a !important; display: flex !important; align-items: center !important; justify-content: space-between !important; padding: 0 15px !important; z-index: 2147483647 !important; border-bottom: 1px solid #333 !important; font-family: "Montserrat", sans-serif !important; box-sizing: border-box !important; }
-            
             .fc-left-group { display: flex !important; align-items: center !important; gap: 15px !important; flex-grow: 1 !important; }
-            
-            /* Native Triggers (Hidden by default, shown via attribute) */
-            .fc-native-trigger { display: none !important; align-items: center !important; justify-content: center !important; background: transparent !important; color: #ccc !important; border: 1px solid transparent !important; border-radius: 4px !important; cursor: pointer !important; font-size: 18
+            .fc-native-trigger { display: none !important; align-items: center !important; justify-content: center !important; background: transparent !important; color: #ccc !important; border: 1px solid transparent !important; border-radius: 4px !important; cursor: pointer !important; font-size: 18px !important; width: 32px !important; height: 32px !important; flex-shrink: 0 !important; transition: background 0.2s !important; padding: 0 !important; }
+            .fc-native-trigger:hover { background: #333 !important; border-color: #555 !important; color: #fff !important; }
+            #fast-chat-menubar[data-platform="gemini"] .fc-gemini-only { display: flex !important; }
+            #fc-native-incognito { width: auto !important; padding: 0 8px !important; font-size: 14px !important; gap: 4px !important; }
+            .fc-desktop-nav { display: flex !important; gap: 20px !important; align-items: center !important; }
+            .fc-nav-link { color: #888 !important; text-decoration: none !important; font-size: 15px !important; font-weight: 400 !important; transition: color 0.2s !important; letter-spacing: 0.5px !important; font-family: "Montserrat", sans-serif !important; }
+            .fc-nav-link:hover { color: #ccc !important; }
+            #fast-chat-menubar[data-platform="gemini"] a[href*="gemini.google.com"] { color: #16a34a !important; font-weight: 700 !important; }
+            #fast-chat-menubar[data-platform="chatgpt"] a[href*="chatgpt.com"] { color: #ffffff !important; font-weight: 700 !important; }
+            .fc-mobile-nav { display: none !important; position: relative !important; }
+            #fc-mobile-dropdown-btn { background: transparent !important; color: #fff !important; border: none !important; font-family: "Montserrat", sans-serif !important; font-size: 16px !important; font-weight: 700 !important; cursor: pointer !important; display: flex !important; align-items: center !important; gap: 6px !important; padding: 0 !important; }
+            #fast-chat-menubar[data-platform="gemini"] #fc-mobile-dropdown-btn { color: #16a34a !important; }
+            .fc-mobile-content { display: none !important; position: absolute !important; top: 100% !important; left: -10px !important; margin-top: 15px !important; background: #1a1a1a !important; border: 1px solid #333 !important; border-radius: 6px !important; flex-direction: column !important; min-width: 140px !important; overflow: hidden !important; box-shadow: 0 8px 16px rgba(0,0,0,0.7) !important; z-index: 2147483648 !important; }
+            .fc-mobile-content.fc-show { display: flex !important; }
+            .fc-mobile-content a { padding: 12px 16px !important; color: #ccc !important; text-decoration: none !important; font-size: 14px !important; font-weight: 500 !important; border-bottom: 1px solid #222 !important; }
+            .fc-mobile-content a:hover { background: #333 !important; color: #fff !important; }
+            .fc-action-group { display: flex !important; gap: 10px !important; align-items: center !important; flex-shrink: 0 !important; }
+            .fc-action-btn { font-family: "Montserrat", sans-serif !important; padding: 6px 12px !important; background: #333 !important; color: #fff !important; border: 1px solid #555 !important; border-radius: 4px !important; cursor: pointer !important; font-size: 12px !important; font-weight: 600 !important; transition: background 0.2s, opacity 0.2s !important; white-space: nowrap !important; } 
+            .fc-action-btn:hover:not(:disabled) { background: #444 !important; }
+            .fc-action-btn:disabled { opacity: 0.3 !important; cursor: not-allowed !important; background: #111 !important; border-color: #333 !important; color: #777 !important; }
+            @media (max-width: 768px) {
+                .fc-desktop-nav { display: none !important; }
+                .fc-mobile-nav { display: block !important; }
+                .fc-action-btn { padding: 6px 8px !important; font-size: 11px !important; }
+                #fc-native-incognito span:last-child { display: none !important; } 
+            }
+        `;
+        document.documentElement.appendChild(style);
+    };
+
+    const initMenubar = () => {
+        if (document.getElementById('fast-chat-menubar')) { return; }
+        injectHardenedStyles();
+        const menubar = document.createElement('header');
+        menubar.id = 'fast-chat-menubar';
+        const currentHost = window.location.hostname;
+        const platformMode = (currentHost.indexOf('gemini.google') !== -1) ? 'gemini' : 'chatgpt';
+        const platformName = platformMode === 'gemini' ? 'Gemini' : 'ChatGPT';
+        menubar.setAttribute('data-platform', platformMode);
+        const leftGroup = document.createElement('div');
+        leftGroup.className = 'fc-left-group';
+        const btnHamburger = document.createElement('button');
+        btnHamburger.id = 'fc-native-hamburger';
+        btnHamburger.className = 'fc-native-trigger fc-gemini-only';
+        btnHamburger.textContent = '☰';
+        btnHamburger.onclick = passThroughClick;
+        leftGroup.appendChild(btnHamburger);
+        const desktopNav = document.createElement('nav');
+        desktopNav.className = 'fc-desktop-nav';
+        [{name:'Gemini',url:'https://gemini.google.com/'},{name:'ChatGPT',url:'https://chatgpt.com/'}].forEach(l => {
+            const a = document.createElement('a');
+            a.textContent = l.name;
+            a.setAttribute('href', l.url);
+            a.className = 'fc-nav-link';
+            desktopNav.appendChild(a);
+        });
+        leftGroup.appendChild(desktopNav);
+        const mobileNav = document.createElement('div');
+        mobileNav.className = 'fc-mobile-nav';
+        const mobileBtn = document.createElement('button');
+        mobileBtn.id = 'fc-mobile-dropdown-btn';
+        mobileBtn.textContent = `${platformName} ▼`;
+        mobileBtn.onclick = (e) => { e.stopPropagation(); document.getElementById('fc-mobile-dropdown-content')?.classList.toggle('fc-show'); };
+        const mobileContent = document.createElement('div');
+        mobileContent.id = 'fc-mobile-dropdown-content';
+        mobileContent.className = 'fc-mobile-content';
+        [{name:'Gemini',url:'https://gemini.google.com/'},{name:'ChatGPT',url:'https://chatgpt.com/'}].forEach(l => {
+            const a = document.createElement('a');
+            a.textContent = l.name;
+            a.setAttribute('href', l.url);
+            mobileContent.appendChild(a);
+        });
+        mobileNav.appendChild(mobileBtn);
+        mobileNav.appendChild(mobileContent);
+        leftGroup.appendChild(mobileNav);
+        document.addEventListener('click', () => document.getElementById('fc-mobile-dropdown-content')?.classList.remove('fc-show'));
+        const actionGroup = document.createElement('div');
+        actionGroup.className = 'fc-action-group';
+        const btnCoding = document.createElement('button');
+        btnCoding.className = 'fc-action-btn';
+        btnCoding.textContent = '💻 Do coding';
+        btnCoding.onclick = () => {
+            const p = "You are an expert software developer and system architect. Please adhere strictly to coding best practices, secure architecture, and optimal performance. Deliver complete, fully-functional code implementations without using placeholders or omitting logic. Await the specifications below.\n\nLanguage: \nProject: \n\n";
+            navigator.clipboard.writeText(p);
+            btnCoding.textContent = '✅ Copied';
+            setTimeout(() => btnCoding.textContent = '💻 Do coding', 2000);
+        };
+        const btnSave = document.createElement('button');
+        btnSave.id = 'fast-chat-btn-save';
+        btnSave.className = 'fc-action-btn';
+        btnSave.textContent = '💾 Save';
+        const btnLoad = document.createElement('button');
+        btnLoad.className = 'fc-action-btn';
+        btnLoad.textContent = '📂 Load';
+        btnLoad.onclick = () => showLoadMenu();
+        const btnIncognito = document.createElement('button');
+        btnIncognito.id = 'fc-native-incognito';
+        btnIncognito.className = 'fc-native-trigger fc-gemini-only';
+        const incIcon = document.createElement('span'); incIcon.textContent = '💬';
+        const incText = document.createElement('span'); incText.textContent = 'Incognito';
+        btnIncognito.appendChild(incIcon); btnIncognito.appendChild(incText);
+        btnIncognito.onclick = passThroughClick;
+        actionGroup.appendChild(btnCoding); actionGroup.appendChild(btnSave); actionGroup.appendChild(btnLoad); actionGroup.appendChild(btnIncognito);
+        menubar.appendChild(leftGroup); menubar.appendChild(actionGroup);
+        document.documentElement.appendChild(menubar);
+    };
+
+    const observer = new MutationObserver(() => {
+        initMenubar();
+        const btnSave = document.getElementById('fast-chat-btn-save');
+        if (btnSave) {
+            const exists = isExistingChat();
+            btnSave.disabled = !exists;
+            btnSave.onclick = exists ? () => saveChat(btnSave) : null;
+        }
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
+    initMenubar();
+})();
