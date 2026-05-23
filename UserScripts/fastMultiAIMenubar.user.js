@@ -4,49 +4,95 @@
 // @match       https://chatgpt.com/*
 // @grant       GM_setValue
 // @grant       GM_getValue
-// @version     4.10
+// @version     4.15
 // @description InteropDebug active, Trusted Types compliant, Offset Ghost-Click, Namespace removed.
+// @downloadURL https://raw.githubusercontent.com/GlitchWalker/VibeScolding/refs/heads/main/UserScripts/fastMultiAIMenubar.user.js
+// @updateURL   https://raw.githubusercontent.com/GlitchWalker/VibeScolding/refs/heads/main/UserScripts/fastMultiAIMenubar.user.js
 // ==/UserScript==
 
-/* --- InteropDebug Module Start --- */
-const InteropDebug = true; 
+/* --- Hardened InteropDebug Module v2.0 Start --- */
+const InteropDebug = true; // Set to false to disable globally for this script
 
 (function(debugEnabled) {
-    if (!debugEnabled) return;
+    if (!debugEnabled) { return; }
 
-    window.__INTEROP_DEBUG_REGISTRY__ = window.__INTEROP_DEBUG_REGISTRY__ || [];
-    window.__INTEROP_DEBUG_REGISTRY__.push({
-        name: GM_info ? GM_info.script.name : 'Unknown Script',
-        timestamp: Date.now()
-    });
+    const SCRIPT_NAME = (typeof GM_info !== 'undefined' && GM_info.script) ? GM_info.script.name : 'Universal Userscript';
 
+    // Hardened safe logging utility avoiding string injection sinks
     const log = (msg, level = 'INFO') => {
-        const scriptName = GM_info ? GM_info.script.name : 'Unknown Script';
-        console.log(`[InteropDebug][${scriptName}][${level}]`, msg);
+        console.log(`[InteropDebug][${SCRIPT_NAME}][${level}]`, msg);
     };
 
-    setInterval(() => {
-        const others = window.__INTEROP_DEBUG_REGISTRY__ || [];
-        if (others.length > 1) {
-            // Passive monitoring active
-        }
-    }, 5000);
+    try {
+        // Secure context allocation for Trusted Types environments
+        const rootContext = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
 
-    window.InteropDebugActions = window.InteropDebugActions || {
-        scanForConflicts: () => {
-            log("Running conflict scan...");
-            const scripts = document.querySelectorAll('script');
-            log(`Current page has ${scripts.length} script tags.`);
-        },
-        reportPerformance: () => {
-            const perf = performance.now();
-            log(`Script initialized at ${perf.toFixed(2)}ms`);
+        // Initialize or hook registry safely without overwriting sealed properties
+        if (!rootContext.__INTEROP_DEBUG_REGISTRY__) {
+            Object.defineProperty(rootContext, '__INTEROP_DEBUG_REGISTRY__', {
+                value: [],
+                writable: true,
+                configurable: true,
+                enumerable: false
+            });
         }
-    };
 
-    log("Active. Monitoring for other InteropDebug scripts.");
+        // Register the active signature securely using immutable entries
+        rootContext.__INTEROP_DEBUG_REGISTRY__.push(Object.freeze({
+            name: SCRIPT_NAME,
+            timestamp: Date.now(),
+            location: window.location.hostname
+        }));
+
+        // Passive monitoring loop to catch script execution cross-talk safely
+        let knownScriptCount = 0;
+        const checkRegistry = () => {
+            const currentScripts = rootContext.__INTEROP_DEBUG_REGISTRY__ || [];
+            if (currentScripts.length !== knownScriptCount) {
+                knownScriptCount = currentScripts.length;
+                const siblings = currentScripts.filter(s => s.name !== SCRIPT_NAME && s.location === window.location.hostname);
+                if (siblings.length > 0) {
+                    log(`Co-existing active debug modules detected: ${siblings.map(s => s.name).join(', ')}`);
+                }
+            }
+        };
+        checkRegistry();
+        setInterval(checkRegistry, 4000);
+
+        // Expose diagnostic API safely using defineProperty to protect against host site poisoning
+        if (!rootContext.InteropDebugActions) {
+            Object.defineProperty(rootContext, 'InteropDebugActions', {
+                value: Object.create(null),
+                writable: false,
+                configurable: true
+            });
+        }
+
+        // Bind secure action utilities directly to the hardened object layout
+        rootContext.InteropDebugActions[`scan_${SCRIPT_NAME}.replace(/\\s+/g, '_')}`] = () => {
+            log("Executing framework conflict assessment...");
+            const scripts = document.getElementsByTagName('script');
+            log(`Host environment active script tags: ${scripts.length}`);
+        };
+
+        rootContext.InteropDebugActions[`perf_${SCRIPT_NAME}.replace(/\\s+/g, '_')}`] = () => {
+            // Protected precision handling for fingerprint-shielded layout engines
+            const runtime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+            log(`Initialization delta marker: ${runtime.toFixed(2)}ms`);
+        };
+
+        log("Initialization successful. Ecosystem monitoring active.");
+
+    } catch (securityError) {
+        // Fallback pipeline if the browser context is entirely locked down by ETP / Trusted Types
+        console.warn(`[InteropDebug][${SCRIPT_NAME}][WARN] Strict context isolation detected. Engaging local containment logging.`, securityError.message);
+
+        // Still provide the performance marker locally even if context sharing is blocked
+        const localRuntime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
+        console.log(`[InteropDebug][${SCRIPT_NAME}][LOCAL_INFO] Local loop initialized at ${localRuntime.toFixed(2)}ms`);
+    }
 })(InteropDebug);
-/* --- InteropDebug Module End --- */
+/* --- Hardened InteropDebug Module v2.0 End --- */
 
 (function() {
     'use strict';
@@ -154,10 +200,10 @@ const InteropDebug = true;
             metaDiv.textContent = chat.lastMessageDate;
             item.appendChild(titleDiv);
             item.appendChild(metaDiv);
-            
+
             const btnRow = document.createElement('div');
             btnRow.style.cssText = 'display:flex;gap:5px;margin-top:8px;';
-            
+
             const copyBtn = document.createElement('button');
             copyBtn.textContent = 'Copy';
             copyBtn.style.cssText = 'padding:4px 10px;background:#333;color:#fff;border:1px solid #555;border-radius:3px;cursor:pointer;font-family:"Montserrat", sans-serif;font-size:11px;';
@@ -166,7 +212,7 @@ const InteropDebug = true;
                 navigator.clipboard.writeText(prompt);
                 copyBtn.textContent = 'Done!';
             };
-            
+
             const delBtn = document.createElement('button');
             delBtn.textContent = 'Delete';
             delBtn.style.cssText = 'padding:4px 10px;background:#422;color:#fff;border:1px solid #522;border-radius:3px;cursor:pointer;font-family:"Montserrat", sans-serif;font-size:11px;';
@@ -184,7 +230,7 @@ const InteropDebug = true;
             item.appendChild(btnRow);
             listContainer.appendChild(item);
         });
-        
+
         fragment.appendChild(listContainer);
         const closeBtn = document.createElement('button');
         closeBtn.textContent = 'Close';
@@ -195,14 +241,50 @@ const InteropDebug = true;
         document.body.appendChild(modal);
     };
 
+    // --- Stabilized Ghost Click Engine ---
     const passThroughClick = (e) => {
         const menubar = document.getElementById('fast-chat-menubar');
-        if (!menubar) return;
+        if (!menubar) { return; }
         const oldVis = menubar.style.visibility;
         menubar.style.visibility = 'hidden';
-        const targetElement = document.elementFromPoint(e.clientX, e.clientY + 45);
+        
+        const targetElement = document.elementFromPoint(e.clientX, e.clientY);
         if (targetElement) { targetElement.click(); }
         menubar.style.visibility = oldVis;
+    };
+
+    // --- Dynamic Context Label Refresher ---
+    const updateContextualLabels = () => {
+        const btnIncognito = document.getElementById('fc-native-incognito');
+        if (!btnIncognito) { return; }
+
+        const isChatActive = isExistingChat();
+        const iconSpan = btnIncognito.querySelector('.fc-icon');
+        const textSpan = btnIncognito.querySelector('.fc-text');
+
+        if (isChatActive) {
+            if (iconSpan && iconSpan.textContent !== '⋮') { iconSpan.textContent = '⋮'; }
+            if (textSpan && textSpan.textContent !== '') { textSpan.textContent = ''; }
+            btnIncognito.style.padding = '0 !important';
+            btnIncognito.style.width = '32px !important';
+        } else {
+            if (iconSpan && iconSpan.textContent !== '💬') { iconSpan.textContent = '💬'; }
+            if (textSpan && textSpan.textContent !== 'Incognito') { textSpan.textContent = 'Incognito'; }
+            btnIncognito.style.padding = '0 8px !important';
+            btnIncognito.style.width = 'auto !important';
+        }
+    };
+
+    const toggleMenubarVisibility = () => {
+        const menubar = document.getElementById('fast-chat-menubar');
+        if (!menubar) { return; }
+        
+        const isHidden = menubar.classList.toggle('fc-retracted');
+        const centerToggleBtn = document.getElementById('fc-center-toggle-btn');
+        
+        if (centerToggleBtn) {
+            centerToggleBtn.textContent = isHidden ? '▼ Show' : '▲ Hide';
+        }
     };
 
     const injectHardenedStyles = () => {
@@ -218,13 +300,20 @@ const InteropDebug = true;
         const style = document.createElement('style');
         style.id = 'fast-chat-global-styles';
         style.textContent = `
-            html { margin-top: 45px !important; }
-            #fast-chat-menubar { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 45px !important; background: #1a1a1a !important; display: flex !important; align-items: center !important; justify-content: space-between !important; padding: 0 15px !important; z-index: 2147483647 !important; border-bottom: 1px solid #333 !important; font-family: "Montserrat", sans-serif !important; box-sizing: border-box !important; }
-            .fc-left-group { display: flex !important; align-items: center !important; gap: 15px !important; flex-grow: 1 !important; }
+            #fast-chat-menubar { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 45px !important; background: #1a1a1a !important; display: flex !important; align-items: center !important; justify-content: space-between !important; padding: 0 15px !important; z-index: 2147483647 !important; border-bottom: 1px solid #333 !important; font-family: "Montserrat", sans-serif !important; box-sizing: border-box !important; transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important; transform: translateY(0); }
+            #fast-chat-menubar.fc-retracted { transform: translateY(-45px) !important; }
+            .fc-left-group { display: flex !important; align-items: center !important; gap: 15px !important; width: 40% !important; }
+            
+            /* --- Dead-Center Toggle Positioning Engine --- */
+            .fc-center-container { position: absolute !important; left: 50% !important; top: 0 !important; transform: translateX(-50%) !important; height: 45px !important; display: flex !important; align-items: center !important; justify-content: center !important; pointer-events: none !important; z-index: 2147483648 !important; }
+            .fc-center-btn { font-family: "Montserrat", sans-serif !important; font-size: 11px !important; font-weight: 700 !important; color: #888 !important; background: #222 !important; border: 1px solid #333 !important; border-radius: 0 0 6px 6px !important; height: 26px !important; padding: 0 14px !important; cursor: pointer !important; pointer-events: auto !important; transition: background 0.15s, color 0.15s, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important; letter-spacing: 0.3px !important; align-self: flex-start !important; border-top: none !important; }
+            .fc-center-btn:hover { background: #333 !important; color: #fff !important; border-color: #444 !important; }
+            #fast-chat-menubar.fc-retracted .fc-center-btn { transform: translateY(45px) !important; background: #1a1a1a !important; border: 1px solid #333 !important; border-top: none !important; }
+
             .fc-native-trigger { display: none !important; align-items: center !important; justify-content: center !important; background: transparent !important; color: #ccc !important; border: 1px solid transparent !important; border-radius: 4px !important; cursor: pointer !important; font-size: 18px !important; width: 32px !important; height: 32px !important; flex-shrink: 0 !important; transition: background 0.2s !important; padding: 0 !important; }
             .fc-native-trigger:hover { background: #333 !important; border-color: #555 !important; color: #fff !important; }
             #fast-chat-menubar[data-platform="gemini"] .fc-gemini-only { display: flex !important; }
-            #fc-native-incognito { width: auto !important; padding: 0 8px !important; font-size: 14px !important; gap: 4px !important; }
+            #fc-native-incognito { display: inline-flex !important; align-items: center !important; justify-content: center !important; font-size: 14px !important; gap: 4px !important; transition: all 0.15s ease-in-out !important; }
             .fc-desktop-nav { display: flex !important; gap: 20px !important; align-items: center !important; }
             .fc-nav-link { color: #888 !important; text-decoration: none !important; font-size: 15px !important; font-weight: 400 !important; transition: color 0.2s !important; letter-spacing: 0.5px !important; font-family: "Montserrat", sans-serif !important; }
             .fc-nav-link:hover { color: #ccc !important; }
@@ -237,15 +326,16 @@ const InteropDebug = true;
             .fc-mobile-content.fc-show { display: flex !important; }
             .fc-mobile-content a { padding: 12px 16px !important; color: #ccc !important; text-decoration: none !important; font-size: 14px !important; font-weight: 500 !important; border-bottom: 1px solid #222 !important; }
             .fc-mobile-content a:hover { background: #333 !important; color: #fff !important; }
-            .fc-action-group { display: flex !important; gap: 10px !important; align-items: center !important; flex-shrink: 0 !important; }
-            .fc-action-btn { font-family: "Montserrat", sans-serif !important; padding: 6px 12px !important; background: #333 !important; color: #fff !important; border: 1px solid #555 !important; border-radius: 4px !important; cursor: pointer !important; font-size: 12px !important; font-weight: 600 !important; transition: background 0.2s, opacity 0.2s !important; white-space: nowrap !important; } 
+            .fc-action-group { display: flex !important; gap: 10px !important; align-items: center !important; justify-content: flex-end !important; width: 40% !important; flex-shrink: 0 !important; }
+            .fc-action-btn { font-family: "Montserrat", sans-serif !important; padding: 6px 12px !important; background: #333 !important; color: #fff !important; border: 1px solid #555 !important; border-radius: 4px !important; cursor: pointer !important; font-size: 12px !important; font-weight: 600 !important; transition: background 0.2s, opacity 0.2s !important; white-space: nowrap !important; }
             .fc-action-btn:hover:not(:disabled) { background: #444 !important; }
             .fc-action-btn:disabled { opacity: 0.3 !important; cursor: not-allowed !important; background: #111 !important; border-color: #333 !important; color: #777 !important; }
             @media (max-width: 768px) {
                 .fc-desktop-nav { display: none !important; }
                 .fc-mobile-nav { display: block !important; }
                 .fc-action-btn { padding: 6px 8px !important; font-size: 11px !important; }
-                #fc-native-incognito span:last-child { display: none !important; } 
+                #fc-native-incognito .fc-text { display: none !important; }
+                .fc-left-group, .fc-action-group { width: auto !important; }
             }
         `;
         document.documentElement.appendChild(style);
@@ -297,6 +387,17 @@ const InteropDebug = true;
         mobileNav.appendChild(mobileContent);
         leftGroup.appendChild(mobileNav);
         document.addEventListener('click', () => document.getElementById('fc-mobile-dropdown-content')?.classList.remove('fc-show'));
+        
+        // --- Structural Layout Middle-Bar Toggle Handle Node ---
+        const centerContainer = document.createElement('div');
+        centerContainer.className = 'fc-center-container';
+        const centerToggleBtn = document.createElement('button');
+        centerToggleBtn.id = 'fc-center-toggle-btn';
+        centerToggleBtn.className = 'fc-center-btn';
+        centerToggleBtn.textContent = '▲ Hide';
+        centerToggleBtn.onclick = (e) => { e.stopPropagation(); toggleMenubarVisibility(); };
+        centerContainer.appendChild(centerToggleBtn);
+        
         const actionGroup = document.createElement('div');
         actionGroup.className = 'fc-action-group';
         const btnCoding = document.createElement('button');
@@ -319,17 +420,21 @@ const InteropDebug = true;
         const btnIncognito = document.createElement('button');
         btnIncognito.id = 'fc-native-incognito';
         btnIncognito.className = 'fc-native-trigger fc-gemini-only';
-        const incIcon = document.createElement('span'); incIcon.textContent = '💬';
-        const incText = document.createElement('span'); incText.textContent = 'Incognito';
+        const incIcon = document.createElement('span'); incIcon.className = 'fc-icon'; incIcon.textContent = '💬';
+        const incText = document.createElement('span'); incText.className = 'fc-text'; incText.textContent = 'Incognito';
         btnIncognito.appendChild(incIcon); btnIncognito.appendChild(incText);
         btnIncognito.onclick = passThroughClick;
         actionGroup.appendChild(btnCoding); actionGroup.appendChild(btnSave); actionGroup.appendChild(btnLoad); actionGroup.appendChild(btnIncognito);
-        menubar.appendChild(leftGroup); menubar.appendChild(actionGroup);
+        
+        menubar.appendChild(leftGroup);
+        menubar.appendChild(centerContainer); // Inject context layer inside document segment layout safely
+        menubar.appendChild(actionGroup);
         document.documentElement.appendChild(menubar);
     };
 
     const observer = new MutationObserver(() => {
         initMenubar();
+        updateContextualLabels();
         const btnSave = document.getElementById('fast-chat-btn-save');
         if (btnSave) {
             const exists = isExistingChat();
@@ -339,4 +444,5 @@ const InteropDebug = true;
     });
     observer.observe(document.body, { childList: true, subtree: true });
     initMenubar();
+    updateContextualLabels();
 })();
