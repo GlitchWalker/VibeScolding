@@ -2,49 +2,34 @@
 // @name        Fast Multi-AI Menubar
 // @match       https://gemini.google.com/*
 // @match       https://chatgpt.com/*
+// @match       https://claude.ai/*
 // @grant       GM_setValue
 // @grant       GM_getValue
-// @version     4.15
-// @description InteropDebug active, Trusted Types compliant, Offset Ghost-Click, Namespace removed.
+// @version     4.19
+// @description InteropDebug active, Hardened Raw Event Dispatch Bypass, Claude Supported.
 // @downloadURL https://raw.githubusercontent.com/GlitchWalker/VibeScolding/refs/heads/main/UserScripts/fastMultiAIMenubar.user.js
 // @updateURL   https://raw.githubusercontent.com/GlitchWalker/VibeScolding/refs/heads/main/UserScripts/fastMultiAIMenubar.user.js
 // ==/UserScript==
 
 /* --- Hardened InteropDebug Module v2.0 Start --- */
-const InteropDebug = true; // Set to false to disable globally for this script
+const InteropDebug = true;
 
 (function(debugEnabled) {
     if (!debugEnabled) { return; }
-
     const SCRIPT_NAME = (typeof GM_info !== 'undefined' && GM_info.script) ? GM_info.script.name : 'Universal Userscript';
-
-    // Hardened safe logging utility avoiding string injection sinks
     const log = (msg, level = 'INFO') => {
         console.log(`[InteropDebug][${SCRIPT_NAME}][${level}]`, msg);
     };
-
     try {
-        // Secure context allocation for Trusted Types environments
         const rootContext = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
-
-        // Initialize or hook registry safely without overwriting sealed properties
         if (!rootContext.__INTEROP_DEBUG_REGISTRY__) {
             Object.defineProperty(rootContext, '__INTEROP_DEBUG_REGISTRY__', {
-                value: [],
-                writable: true,
-                configurable: true,
-                enumerable: false
+                value: [], writable: true, configurable: true, enumerable: false
             });
         }
-
-        // Register the active signature securely using immutable entries
         rootContext.__INTEROP_DEBUG_REGISTRY__.push(Object.freeze({
-            name: SCRIPT_NAME,
-            timestamp: Date.now(),
-            location: window.location.hostname
+            name: SCRIPT_NAME, timestamp: Date.now(), location: window.location.hostname
         }));
-
-        // Passive monitoring loop to catch script execution cross-talk safely
         let knownScriptCount = 0;
         const checkRegistry = () => {
             const currentScripts = rootContext.__INTEROP_DEBUG_REGISTRY__ || [];
@@ -58,39 +43,7 @@ const InteropDebug = true; // Set to false to disable globally for this script
         };
         checkRegistry();
         setInterval(checkRegistry, 4000);
-
-        // Expose diagnostic API safely using defineProperty to protect against host site poisoning
-        if (!rootContext.InteropDebugActions) {
-            Object.defineProperty(rootContext, 'InteropDebugActions', {
-                value: Object.create(null),
-                writable: false,
-                configurable: true
-            });
-        }
-
-        // Bind secure action utilities directly to the hardened object layout
-        rootContext.InteropDebugActions[`scan_${SCRIPT_NAME}.replace(/\\s+/g, '_')}`] = () => {
-            log("Executing framework conflict assessment...");
-            const scripts = document.getElementsByTagName('script');
-            log(`Host environment active script tags: ${scripts.length}`);
-        };
-
-        rootContext.InteropDebugActions[`perf_${SCRIPT_NAME}.replace(/\\s+/g, '_')}`] = () => {
-            // Protected precision handling for fingerprint-shielded layout engines
-            const runtime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-            log(`Initialization delta marker: ${runtime.toFixed(2)}ms`);
-        };
-
-        log("Initialization successful. Ecosystem monitoring active.");
-
-    } catch (securityError) {
-        // Fallback pipeline if the browser context is entirely locked down by ETP / Trusted Types
-        console.warn(`[InteropDebug][${SCRIPT_NAME}][WARN] Strict context isolation detected. Engaging local containment logging.`, securityError.message);
-
-        // Still provide the performance marker locally even if context sharing is blocked
-        const localRuntime = (typeof performance !== 'undefined' && performance.now) ? performance.now() : Date.now();
-        console.log(`[InteropDebug][${SCRIPT_NAME}][LOCAL_INFO] Local loop initialized at ${localRuntime.toFixed(2)}ms`);
-    }
+    } catch (e) {}
 })(InteropDebug);
 /* --- Hardened InteropDebug Module v2.0 End --- */
 
@@ -114,6 +67,11 @@ const InteropDebug = true; // Set to false to disable globally for this script
             if (active) { title = active.innerText.trim(); }
             const time = document.querySelector('[data-testid="author-turn"] time, .text-xs.text-token-text-tertiary:last-of-type');
             if (time) { lastMessageDate = time.innerText.trim(); }
+        } else if (host.indexOf('claude.ai') !== -1) {
+            const active = document.querySelector('div[data-testid="chat-sidebar-row"][data-active="true"], title');
+            if (active) { title = (active.tagName === 'TITLE') ? document.title : active.innerText.trim(); }
+            const time = document.querySelector('.text-time, time');
+            if (time) { lastMessageDate = time.innerText.trim(); }
         }
         return { title: title, lastMessageDate: lastMessageDate };
     };
@@ -126,6 +84,9 @@ const InteropDebug = true; // Set to false to disable globally for this script
         if (host.indexOf('chatgpt') !== -1) {
             return document.querySelectorAll('[data-message-author-role]').length > 0;
         }
+        if (host.indexOf('claude.ai') !== -1) {
+            return document.querySelectorAll('.font-user, .font-claude, [data-testid="user-message"]').length > 0;
+        }
         return false;
     };
 
@@ -134,19 +95,27 @@ const InteropDebug = true; // Set to false to disable globally for this script
         const host = window.location.hostname;
         const output = ['# ' + meta.title, '*Last Message: ' + meta.lastMessageDate + '*', ''];
 
-        let elements = [];
-        const isGemini = host.indexOf('gemini') !== -1;
-
-        if (isGemini) {
-            elements = document.querySelectorAll('user-query, model-response');
-        } else {
-            elements = document.querySelectorAll('[data-message-author-role]');
-        }
-
-        for (const el of elements) {
-            const isUser = isGemini ? (el.tagName === 'USER-QUERY') : (el.getAttribute('data-message-author-role') === 'user');
-            const role = isUser ? '**User**' : (isGemini ? '**Gemini**' : '**ChatGPT**');
-            output.push(role + ':\n' + el.innerText + '\n\n---\n');
+        if (host.indexOf('gemini') !== -1) {
+            const elements = document.querySelectorAll('user-query, model-response');
+            for (const el of elements) {
+                const isUser = el.tagName === 'USER-QUERY';
+                const role = isUser ? '**User**' : '**Gemini**';
+                output.push(role + ':\n' + el.innerText + '\n\n---\n');
+            }
+        } else if (host.indexOf('chatgpt.com') !== -1) {
+            const elements = document.querySelectorAll('[data-message-author-role]');
+            for (const el of elements) {
+                const isUser = el.getAttribute('data-message-author-role') === 'user';
+                const role = isUser ? '**User**' : '**ChatGPT**';
+                output.push(role + ':\n' + el.innerText + '\n\n---\n');
+            }
+        } else if (host.indexOf('claude.ai') !== -1) {
+            const elements = document.querySelectorAll('.font-user, .font-claude, [data-testid="user-message"], div.grid.grid-cols-1:has(.prose)');
+            for (const el of elements) {
+                const isUser = el.classList.contains('font-user') || el.getAttribute('data-testid') === 'user-message';
+                const role = isUser ? '**User**' : '**Claude**';
+                output.push(role + ':\n' + el.innerText + '\n\n---\n');
+            }
         }
         return output.join('\n');
     };
@@ -241,37 +210,64 @@ const InteropDebug = true; // Set to false to disable globally for this script
         document.body.appendChild(modal);
     };
 
-    // --- Stabilized Ghost Click Engine ---
+    // --- Hardened Trust Input Bypass Dispatcher ---
+    const rawBypassDispatch = (targetNode) => {
+        if (!targetNode) return;
+        const opts = { bubbles: true, cancelable: true, view: window, isTrusted: true };
+        targetNode.dispatchEvent(new PointerEvent('pointerdown', opts));
+        targetNode.dispatchEvent(new MouseEvent('mousedown', opts));
+        targetNode.dispatchEvent(new PointerEvent('pointerup', opts));
+        targetNode.dispatchEvent(new MouseEvent('mouseup', opts));
+        targetNode.dispatchEvent(new MouseEvent('click', opts));
+    };
+
     const passThroughClick = (e) => {
+        const triggerId = e.currentTarget ? e.currentTarget.id : '';
+        
+        if (triggerId === 'fc-native-hamburger') {
+            const nativeHamburger = document.querySelector('button[aria-label="Main menu"], gmat-nav-menu-button button');
+            if (nativeHamburger) { rawBypassDispatch(nativeHamburger); return; }
+            
+            const fallbackMenu = Array.from(document.querySelectorAll('.v-btn')).find(el => el.textContent.includes('menu'));
+            if (fallbackMenu) { rawBypassDispatch(fallbackMenu); return; }
+        }
+
+        if (triggerId === 'fc-native-incognito') {
+            const isChatActive = isExistingChat();
+            if (isChatActive) {
+                const nativeDots = document.querySelector('button[aria-label="Chat settings"], gmat-icon-button:has(button[aria-haspopup="menu"]) button, button[aria-haspopup="menu"]');
+                if (nativeDots) { rawBypassDispatch(nativeDots); return; }
+                
+                const fallbackDots = Array.from(document.querySelectorAll('mat-icon, .mat-icon, button')).find(el => el.textContent.includes('more_vert') || el.getAttribute('aria-label') === 'Chat settings');
+                if (fallbackDots) { rawBypassDispatch(fallbackDots.closest('button') || fallbackDots); return; }
+            } else {
+                const nativeIncognito = document.querySelector('a[href*="history=false"], [aria-label*="Incognito"], button:has(mat-icon)');
+                const match = Array.from(document.querySelectorAll('button, a')).find(el => el.getAttribute('aria-label')?.includes('Incognito') || el.href?.includes('history=false'));
+                if (match) { rawBypassDispatch(match); return; }
+                if (nativeIncognito) { rawBypassDispatch(nativeIncognito); return; }
+            }
+        }
+
         const menubar = document.getElementById('fast-chat-menubar');
         if (!menubar) { return; }
         const oldVis = menubar.style.visibility;
         menubar.style.visibility = 'hidden';
-        
         const targetElement = document.elementFromPoint(e.clientX, e.clientY);
-        if (targetElement) { targetElement.click(); }
+        if (targetElement) { rawBypassDispatch(targetElement); }
         menubar.style.visibility = oldVis;
     };
 
-    // --- Dynamic Context Label Refresher ---
     const updateContextualLabels = () => {
         const btnIncognito = document.getElementById('fc-native-incognito');
         if (!btnIncognito) { return; }
 
         const isChatActive = isExistingChat();
         const iconSpan = btnIncognito.querySelector('.fc-icon');
-        const textSpan = btnIncognito.querySelector('.fc-text');
 
         if (isChatActive) {
             if (iconSpan && iconSpan.textContent !== '⋮') { iconSpan.textContent = '⋮'; }
-            if (textSpan && textSpan.textContent !== '') { textSpan.textContent = ''; }
-            btnIncognito.style.padding = '0 !important';
-            btnIncognito.style.width = '32px !important';
         } else {
-            if (iconSpan && iconSpan.textContent !== '💬') { iconSpan.textContent = '💬'; }
-            if (textSpan && textSpan.textContent !== 'Incognito') { textSpan.textContent = 'Incognito'; }
-            btnIncognito.style.padding = '0 8px !important';
-            btnIncognito.style.width = 'auto !important';
+            if (iconSpan && iconSpan.textContent !== '⦙💬⦙') { iconSpan.textContent = '⦙💬⦙'; }
         }
     };
 
@@ -304,7 +300,6 @@ const InteropDebug = true; // Set to false to disable globally for this script
             #fast-chat-menubar.fc-retracted { transform: translateY(-45px) !important; }
             .fc-left-group { display: flex !important; align-items: center !important; gap: 15px !important; width: 40% !important; }
             
-            /* --- Dead-Center Toggle Positioning Engine --- */
             .fc-center-container { position: absolute !important; left: 50% !important; top: 0 !important; transform: translateX(-50%) !important; height: 45px !important; display: flex !important; align-items: center !important; justify-content: center !important; pointer-events: none !important; z-index: 2147483648 !important; }
             .fc-center-btn { font-family: "Montserrat", sans-serif !important; font-size: 11px !important; font-weight: 700 !important; color: #888 !important; background: #222 !important; border: 1px solid #333 !important; border-radius: 0 0 6px 6px !important; height: 26px !important; padding: 0 14px !important; cursor: pointer !important; pointer-events: auto !important; transition: background 0.15s, color 0.15s, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important; letter-spacing: 0.3px !important; align-self: flex-start !important; border-top: none !important; }
             .fc-center-btn:hover { background: #333 !important; color: #fff !important; border-color: #444 !important; }
@@ -313,15 +308,22 @@ const InteropDebug = true; // Set to false to disable globally for this script
             .fc-native-trigger { display: none !important; align-items: center !important; justify-content: center !important; background: transparent !important; color: #ccc !important; border: 1px solid transparent !important; border-radius: 4px !important; cursor: pointer !important; font-size: 18px !important; width: 32px !important; height: 32px !important; flex-shrink: 0 !important; transition: background 0.2s !important; padding: 0 !important; }
             .fc-native-trigger:hover { background: #333 !important; border-color: #555 !important; color: #fff !important; }
             #fast-chat-menubar[data-platform="gemini"] .fc-gemini-only { display: flex !important; }
-            #fc-native-incognito { display: inline-flex !important; align-items: center !important; justify-content: center !important; font-size: 14px !important; gap: 4px !important; transition: all 0.15s ease-in-out !important; }
+            
+            #fc-native-incognito { width: 32px !important; height: 32px !important; padding: 0 !important; border-radius: 4px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; font-size: 15px !important; transition: all 0.15s ease-in-out !important; }
+            
             .fc-desktop-nav { display: flex !important; gap: 20px !important; align-items: center !important; }
             .fc-nav-link { color: #888 !important; text-decoration: none !important; font-size: 15px !important; font-weight: 400 !important; transition: color 0.2s !important; letter-spacing: 0.5px !important; font-family: "Montserrat", sans-serif !important; }
             .fc-nav-link:hover { color: #ccc !important; }
             #fast-chat-menubar[data-platform="gemini"] a[href*="gemini.google.com"] { color: #16a34a !important; font-weight: 700 !important; }
             #fast-chat-menubar[data-platform="chatgpt"] a[href*="chatgpt.com"] { color: #ffffff !important; font-weight: 700 !important; }
+            #fast-chat-menubar[data-platform="claude"] a[href*="claude.ai"] { color: #d97706 !important; font-weight: 700 !important; }
+            
             .fc-mobile-nav { display: none !important; position: relative !important; }
             #fc-mobile-dropdown-btn { background: transparent !important; color: #fff !important; border: none !important; font-family: "Montserrat", sans-serif !important; font-size: 16px !important; font-weight: 700 !important; cursor: pointer !important; display: flex !important; align-items: center !important; gap: 6px !important; padding: 0 !important; }
             #fast-chat-menubar[data-platform="gemini"] #fc-mobile-dropdown-btn { color: #16a34a !important; }
+            #fast-chat-menubar[data-platform="chatgpt"] #fc-mobile-dropdown-btn { color: #ffffff !important; }
+            #fast-chat-menubar[data-platform="claude"] #fc-mobile-dropdown-btn { color: #d97706 !important; }
+            
             .fc-mobile-content { display: none !important; position: absolute !important; top: 100% !important; left: -10px !important; margin-top: 15px !important; background: #1a1a1a !important; border: 1px solid #333 !important; border-radius: 6px !important; flex-direction: column !important; min-width: 140px !important; overflow: hidden !important; box-shadow: 0 8px 16px rgba(0,0,0,0.7) !important; z-index: 2147483648 !important; }
             .fc-mobile-content.fc-show { display: flex !important; }
             .fc-mobile-content a { padding: 12px 16px !important; color: #ccc !important; text-decoration: none !important; font-size: 14px !important; font-weight: 500 !important; border-bottom: 1px solid #222 !important; }
@@ -334,7 +336,6 @@ const InteropDebug = true; // Set to false to disable globally for this script
                 .fc-desktop-nav { display: none !important; }
                 .fc-mobile-nav { display: block !important; }
                 .fc-action-btn { padding: 6px 8px !important; font-size: 11px !important; }
-                #fc-native-incognito .fc-text { display: none !important; }
                 .fc-left-group, .fc-action-group { width: auto !important; }
             }
         `;
@@ -346,10 +347,15 @@ const InteropDebug = true; // Set to false to disable globally for this script
         injectHardenedStyles();
         const menubar = document.createElement('header');
         menubar.id = 'fast-chat-menubar';
+        
         const currentHost = window.location.hostname;
-        const platformMode = (currentHost.indexOf('gemini.google') !== -1) ? 'gemini' : 'chatgpt';
-        const platformName = platformMode === 'gemini' ? 'Gemini' : 'ChatGPT';
+        let platformMode = 'chatgpt';
+        if (currentHost.indexOf('gemini.google') !== -1) { platformMode = 'gemini'; }
+        else if (currentHost.indexOf('claude.ai') !== -1) { platformMode = 'claude'; }
+        
+        const platformName = platformMode === 'gemini' ? 'Gemini' : (platformMode === 'claude' ? 'Claude' : 'ChatGPT');
         menubar.setAttribute('data-platform', platformMode);
+        
         const leftGroup = document.createElement('div');
         leftGroup.className = 'fc-left-group';
         const btnHamburger = document.createElement('button');
@@ -358,9 +364,10 @@ const InteropDebug = true; // Set to false to disable globally for this script
         btnHamburger.textContent = '☰';
         btnHamburger.onclick = passThroughClick;
         leftGroup.appendChild(btnHamburger);
+        
         const desktopNav = document.createElement('nav');
         desktopNav.className = 'fc-desktop-nav';
-        [{name:'Gemini',url:'https://gemini.google.com/'},{name:'ChatGPT',url:'https://chatgpt.com/'}].forEach(l => {
+        [{name:'Gemini',url:'https://gemini.google.com/'},{name:'ChatGPT',url:'https://chatgpt.com/'},{name:'Claude',url:'https://claude.ai/'}].forEach(l => {
             const a = document.createElement('a');
             a.textContent = l.name;
             a.setAttribute('href', l.url);
@@ -368,6 +375,7 @@ const InteropDebug = true; // Set to false to disable globally for this script
             desktopNav.appendChild(a);
         });
         leftGroup.appendChild(desktopNav);
+        
         const mobileNav = document.createElement('div');
         mobileNav.className = 'fc-mobile-nav';
         const mobileBtn = document.createElement('button');
@@ -377,7 +385,7 @@ const InteropDebug = true; // Set to false to disable globally for this script
         const mobileContent = document.createElement('div');
         mobileContent.id = 'fc-mobile-dropdown-content';
         mobileContent.className = 'fc-mobile-content';
-        [{name:'Gemini',url:'https://gemini.google.com/'},{name:'ChatGPT',url:'https://chatgpt.com/'}].forEach(l => {
+        [{name:'Gemini',url:'https://gemini.google.com/'},{name:'ChatGPT',url:'https://chatgpt.com/'},{name:'Claude',url:'https://claude.ai/'}].forEach(l => {
             const a = document.createElement('a');
             a.textContent = l.name;
             a.setAttribute('href', l.url);
@@ -388,7 +396,6 @@ const InteropDebug = true; // Set to false to disable globally for this script
         leftGroup.appendChild(mobileNav);
         document.addEventListener('click', () => document.getElementById('fc-mobile-dropdown-content')?.classList.remove('fc-show'));
         
-        // --- Structural Layout Middle-Bar Toggle Handle Node ---
         const centerContainer = document.createElement('div');
         centerContainer.className = 'fc-center-container';
         const centerToggleBtn = document.createElement('button');
@@ -417,17 +424,21 @@ const InteropDebug = true; // Set to false to disable globally for this script
         btnLoad.className = 'fc-action-btn';
         btnLoad.textContent = '📂 Load';
         btnLoad.onclick = () => showLoadMenu();
+        
         const btnIncognito = document.createElement('button');
         btnIncognito.id = 'fc-native-incognito';
         btnIncognito.className = 'fc-native-trigger fc-gemini-only';
-        const incIcon = document.createElement('span'); incIcon.className = 'fc-icon'; incIcon.textContent = '💬';
-        const incText = document.createElement('span'); incText.className = 'fc-text'; incText.textContent = 'Incognito';
-        btnIncognito.appendChild(incIcon); btnIncognito.appendChild(incText);
+        
+        const incIcon = document.createElement('span'); 
+        incIcon.className = 'fc-icon'; 
+        incIcon.textContent = '⦙💬⦙';
+        btnIncognito.appendChild(incIcon);
         btnIncognito.onclick = passThroughClick;
+        
         actionGroup.appendChild(btnCoding); actionGroup.appendChild(btnSave); actionGroup.appendChild(btnLoad); actionGroup.appendChild(btnIncognito);
         
         menubar.appendChild(leftGroup);
-        menubar.appendChild(centerContainer); // Inject context layer inside document segment layout safely
+        menubar.appendChild(centerContainer);
         menubar.appendChild(actionGroup);
         document.documentElement.appendChild(menubar);
     };

@@ -1,0 +1,44 @@
+name: Local Config
+version: 1.0.0
+schema: v1
+models:
+  - name: Autodetect
+    provider: lmstudio
+    model: AUTODETECT
+    apiBase: http://192.168.50.11:58080/v1
+    capabilities:
+      - tool_use
+    roles:
+      - chat
+      - edit
+      - apply
+      - rerank
+      - autocomplete
+      - embed
+  - name: Gemini 2.5 Pro (Architect)
+    provider: gemini
+    model: gemini-2.5-pro
+    apiKey: AIzaSyACPWgOBbQSSBH_XNlIZyKXbllZH7PyoGY
+    capabilities:
+      - tool_use
+    roles:
+      - chat
+customCommands:
+  - name: architect
+    description: "Generate a Strict Implementation Prompt for Qwencoder"
+    prompt: "You are the project architect. Analyze the provided context and the user's request. DO NOT write the final code. Instead, write a step-by-step 'Strict Implementation Prompt' designed for a 30B parameter local model. Define exact files to edit, variables to use, and logic to implement without hallucinating."
+mcpServers:
+  - name: brave-search
+    command: podman
+    args: ["start", "-ai", "brave-mcp"]
+  - name: podman-diagnostics
+    command: podman
+    args: ["start", "-ai", "podman-diag-final"]
+    extraOptions:
+      forcedProperties: {}
+  - name: AnythingLLM_Workspace
+    command: npx
+    args: ["-y", "anythingllm-mcp-server"]
+    env:
+      ANYTHINGLLM_API_KEY: "2T0C5BN-M264FMR-PNJKZ8E-NM4KJN6"
+      ANYTHINGLLM_BASE_URL: "http://localhost:3001/api/v1"

@@ -1,0 +1,16 @@
+mcpServers:
+  - name: brave-search
+    command: podman
+    args: ["start", "-ai", "brave-mcp"]
+  - name: podman-diagnostics
+    command: podman
+    args: ["start", "-ai", "podman-diag-final"]
+    extraOptions:
+      forcedProperties: {}
+  - name: AnythingLLM_Workspace
+    command: npx
+    args: ["-y", "anythingllm-mcp-server"]
+    args: []
+    env:
+      ANYTHINGLLM_API_KEY: "2T0C5BN-M264FMR-PNJKZ8E-NM4KJN6"
+      ANYTHINGLLM_BASE_URL: "http://localhost:3001/api/v1"
