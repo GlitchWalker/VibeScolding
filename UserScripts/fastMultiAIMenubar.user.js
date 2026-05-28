@@ -11,17 +11,29 @@
 // @updateURL   https://raw.githubusercontent.com/GlitchWalker/VibeScolding/refs/heads/main/UserScripts/fastMultiAIMenubar.user.js
 // ==/UserScript==
 
-/* --- Hardened InteropDebug Module v2.0 Start --- */
-const InteropDebug = true;
+/* --- Hardened InteropDebug Module v2.0 (Universal Global Pattern) --- */
+(function() {
+    'use strict';
 
-(function(debugEnabled) {
-    if (!debugEnabled) { return; }
+    const InteropDebug = true;
     const SCRIPT_NAME = (typeof GM_info !== 'undefined' && GM_info.script) ? GM_info.script.name : 'Universal Userscript';
-    const log = (msg, level = 'INFO') => {
-        console.log(`[InteropDebug][${SCRIPT_NAME}][${level}]`, msg);
-    };
+    const noop = () => {};
+
+    // 1. Define the object directly on the global window immediately
+    window.Logger = !InteropDebug ?
+        { log: noop, warn: noop, error: noop, trace: noop, time: noop, timeEnd: noop } :
+        {
+            log: (...args) => console.log(`[InteropDebug][${SCRIPT_NAME}][INFO]`, ...args),
+            warn: (...args) => console.warn(`[InteropDebug][${SCRIPT_NAME}][WARN]`, ...args),
+            error: (...args) => console.error(`[InteropDebug][${SCRIPT_NAME}][ERROR]`, ...args),
+            trace: (...args) => console.trace(`[InteropDebug][${SCRIPT_NAME}][TRACE]`, ...args),
+            time: (label) => console.time(`[InteropDebug][${SCRIPT_NAME}] ${label}`),
+            timeEnd: (label) => console.timeEnd(`[InteropDebug][${SCRIPT_NAME}] ${label}`)
+        };
+
     try {
         const rootContext = (typeof unsafeWindow !== 'undefined') ? unsafeWindow : window;
+
         if (!rootContext.__INTEROP_DEBUG_REGISTRY__) {
             Object.defineProperty(rootContext, '__INTEROP_DEBUG_REGISTRY__', {
                 value: [], writable: true, configurable: true, enumerable: false
@@ -30,6 +42,7 @@ const InteropDebug = true;
         rootContext.__INTEROP_DEBUG_REGISTRY__.push(Object.freeze({
             name: SCRIPT_NAME, timestamp: Date.now(), location: window.location.hostname
         }));
+
         let knownScriptCount = 0;
         const checkRegistry = () => {
             const currentScripts = rootContext.__INTEROP_DEBUG_REGISTRY__ || [];
@@ -37,15 +50,27 @@ const InteropDebug = true;
                 knownScriptCount = currentScripts.length;
                 const siblings = currentScripts.filter(s => s.name !== SCRIPT_NAME && s.location === window.location.hostname);
                 if (siblings.length > 0) {
-                    log(`Co-existing active debug modules detected: ${siblings.map(s => s.name).join(', ')}`);
+                    window.Logger.log(`Co-existing active debug modules: ${siblings.map(s => s.name).join(', ')}`);
                 }
             }
         };
         checkRegistry();
         setInterval(checkRegistry, 4000);
-    } catch (e) {}
-})(InteropDebug);
-/* --- Hardened InteropDebug Module v2.0 End --- */
+
+        if (!rootContext.InteropDebugActions) {
+            Object.defineProperty(rootContext, 'InteropDebugActions', {
+                value: Object.create(null), writable: false, configurable: true
+            });
+        }
+
+        rootContext.InteropDebugActions[`scan_${SCRIPT_NAME.replace(/\s+/g, '_')}`] = () => {
+            window.Logger.log(`Active script tags: ${document.getElementsByTagName('script').length}`);
+        };
+    } catch (e) {
+        window.Logger.warn(`Isolation error: ${e.message}`);
+    }
+})();
+/* --- End Universal Global Pattern --- */
 
 (function() {
     'use strict';
@@ -223,11 +248,11 @@ const InteropDebug = true;
 
     const passThroughClick = (e) => {
         const triggerId = e.currentTarget ? e.currentTarget.id : '';
-        
+
         if (triggerId === 'fc-native-hamburger') {
             const nativeHamburger = document.querySelector('button[aria-label="Main menu"], gmat-nav-menu-button button');
             if (nativeHamburger) { rawBypassDispatch(nativeHamburger); return; }
-            
+
             const fallbackMenu = Array.from(document.querySelectorAll('.v-btn')).find(el => el.textContent.includes('menu'));
             if (fallbackMenu) { rawBypassDispatch(fallbackMenu); return; }
         }
@@ -237,7 +262,7 @@ const InteropDebug = true;
             if (isChatActive) {
                 const nativeDots = document.querySelector('button[aria-label="Chat settings"], gmat-icon-button:has(button[aria-haspopup="menu"]) button, button[aria-haspopup="menu"]');
                 if (nativeDots) { rawBypassDispatch(nativeDots); return; }
-                
+
                 const fallbackDots = Array.from(document.querySelectorAll('mat-icon, .mat-icon, button')).find(el => el.textContent.includes('more_vert') || el.getAttribute('aria-label') === 'Chat settings');
                 if (fallbackDots) { rawBypassDispatch(fallbackDots.closest('button') || fallbackDots); return; }
             } else {
@@ -274,10 +299,10 @@ const InteropDebug = true;
     const toggleMenubarVisibility = () => {
         const menubar = document.getElementById('fast-chat-menubar');
         if (!menubar) { return; }
-        
+
         const isHidden = menubar.classList.toggle('fc-retracted');
         const centerToggleBtn = document.getElementById('fc-center-toggle-btn');
-        
+
         if (centerToggleBtn) {
             centerToggleBtn.textContent = isHidden ? '▼ Show' : '▲ Hide';
         }
@@ -299,7 +324,7 @@ const InteropDebug = true;
             #fast-chat-menubar { position: fixed !important; top: 0 !important; left: 0 !important; width: 100% !important; height: 45px !important; background: #1a1a1a !important; display: flex !important; align-items: center !important; justify-content: space-between !important; padding: 0 15px !important; z-index: 2147483647 !important; border-bottom: 1px solid #333 !important; font-family: "Montserrat", sans-serif !important; box-sizing: border-box !important; transition: transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important; transform: translateY(0); }
             #fast-chat-menubar.fc-retracted { transform: translateY(-45px) !important; }
             .fc-left-group { display: flex !important; align-items: center !important; gap: 15px !important; width: 40% !important; }
-            
+
             .fc-center-container { position: absolute !important; left: 50% !important; top: 0 !important; transform: translateX(-50%) !important; height: 45px !important; display: flex !important; align-items: center !important; justify-content: center !important; pointer-events: none !important; z-index: 2147483648 !important; }
             .fc-center-btn { font-family: "Montserrat", sans-serif !important; font-size: 11px !important; font-weight: 700 !important; color: #888 !important; background: #222 !important; border: 1px solid #333 !important; border-radius: 0 0 6px 6px !important; height: 26px !important; padding: 0 14px !important; cursor: pointer !important; pointer-events: auto !important; transition: background 0.15s, color 0.15s, transform 0.2s cubic-bezier(0.4, 0, 0.2, 1) !important; box-shadow: 0 4px 6px rgba(0,0,0,0.3) !important; letter-spacing: 0.3px !important; align-self: flex-start !important; border-top: none !important; }
             .fc-center-btn:hover { background: #333 !important; color: #fff !important; border-color: #444 !important; }
@@ -308,22 +333,22 @@ const InteropDebug = true;
             .fc-native-trigger { display: none !important; align-items: center !important; justify-content: center !important; background: transparent !important; color: #ccc !important; border: 1px solid transparent !important; border-radius: 4px !important; cursor: pointer !important; font-size: 18px !important; width: 32px !important; height: 32px !important; flex-shrink: 0 !important; transition: background 0.2s !important; padding: 0 !important; }
             .fc-native-trigger:hover { background: #333 !important; border-color: #555 !important; color: #fff !important; }
             #fast-chat-menubar[data-platform="gemini"] .fc-gemini-only { display: flex !important; }
-            
+
             #fc-native-incognito { width: 32px !important; height: 32px !important; padding: 0 !important; border-radius: 4px !important; display: inline-flex !important; align-items: center !important; justify-content: center !important; font-size: 15px !important; transition: all 0.15s ease-in-out !important; }
-            
+
             .fc-desktop-nav { display: flex !important; gap: 20px !important; align-items: center !important; }
             .fc-nav-link { color: #888 !important; text-decoration: none !important; font-size: 15px !important; font-weight: 400 !important; transition: color 0.2s !important; letter-spacing: 0.5px !important; font-family: "Montserrat", sans-serif !important; }
             .fc-nav-link:hover { color: #ccc !important; }
             #fast-chat-menubar[data-platform="gemini"] a[href*="gemini.google.com"] { color: #16a34a !important; font-weight: 700 !important; }
             #fast-chat-menubar[data-platform="chatgpt"] a[href*="chatgpt.com"] { color: #ffffff !important; font-weight: 700 !important; }
             #fast-chat-menubar[data-platform="claude"] a[href*="claude.ai"] { color: #d97706 !important; font-weight: 700 !important; }
-            
+
             .fc-mobile-nav { display: none !important; position: relative !important; }
             #fc-mobile-dropdown-btn { background: transparent !important; color: #fff !important; border: none !important; font-family: "Montserrat", sans-serif !important; font-size: 16px !important; font-weight: 700 !important; cursor: pointer !important; display: flex !important; align-items: center !important; gap: 6px !important; padding: 0 !important; }
             #fast-chat-menubar[data-platform="gemini"] #fc-mobile-dropdown-btn { color: #16a34a !important; }
             #fast-chat-menubar[data-platform="chatgpt"] #fc-mobile-dropdown-btn { color: #ffffff !important; }
             #fast-chat-menubar[data-platform="claude"] #fc-mobile-dropdown-btn { color: #d97706 !important; }
-            
+
             .fc-mobile-content { display: none !important; position: absolute !important; top: 100% !important; left: -10px !important; margin-top: 15px !important; background: #1a1a1a !important; border: 1px solid #333 !important; border-radius: 6px !important; flex-direction: column !important; min-width: 140px !important; overflow: hidden !important; box-shadow: 0 8px 16px rgba(0,0,0,0.7) !important; z-index: 2147483648 !important; }
             .fc-mobile-content.fc-show { display: flex !important; }
             .fc-mobile-content a { padding: 12px 16px !important; color: #ccc !important; text-decoration: none !important; font-size: 14px !important; font-weight: 500 !important; border-bottom: 1px solid #222 !important; }
@@ -347,15 +372,15 @@ const InteropDebug = true;
         injectHardenedStyles();
         const menubar = document.createElement('header');
         menubar.id = 'fast-chat-menubar';
-        
+
         const currentHost = window.location.hostname;
         let platformMode = 'chatgpt';
         if (currentHost.indexOf('gemini.google') !== -1) { platformMode = 'gemini'; }
         else if (currentHost.indexOf('claude.ai') !== -1) { platformMode = 'claude'; }
-        
+
         const platformName = platformMode === 'gemini' ? 'Gemini' : (platformMode === 'claude' ? 'Claude' : 'ChatGPT');
         menubar.setAttribute('data-platform', platformMode);
-        
+
         const leftGroup = document.createElement('div');
         leftGroup.className = 'fc-left-group';
         const btnHamburger = document.createElement('button');
@@ -364,7 +389,7 @@ const InteropDebug = true;
         btnHamburger.textContent = '☰';
         btnHamburger.onclick = passThroughClick;
         leftGroup.appendChild(btnHamburger);
-        
+
         const desktopNav = document.createElement('nav');
         desktopNav.className = 'fc-desktop-nav';
         [{name:'Gemini',url:'https://gemini.google.com/'},{name:'ChatGPT',url:'https://chatgpt.com/'},{name:'Claude',url:'https://claude.ai/'}].forEach(l => {
@@ -375,7 +400,7 @@ const InteropDebug = true;
             desktopNav.appendChild(a);
         });
         leftGroup.appendChild(desktopNav);
-        
+
         const mobileNav = document.createElement('div');
         mobileNav.className = 'fc-mobile-nav';
         const mobileBtn = document.createElement('button');
@@ -395,7 +420,7 @@ const InteropDebug = true;
         mobileNav.appendChild(mobileContent);
         leftGroup.appendChild(mobileNav);
         document.addEventListener('click', () => document.getElementById('fc-mobile-dropdown-content')?.classList.remove('fc-show'));
-        
+
         const centerContainer = document.createElement('div');
         centerContainer.className = 'fc-center-container';
         const centerToggleBtn = document.createElement('button');
@@ -404,7 +429,7 @@ const InteropDebug = true;
         centerToggleBtn.textContent = '▲ Hide';
         centerToggleBtn.onclick = (e) => { e.stopPropagation(); toggleMenubarVisibility(); };
         centerContainer.appendChild(centerToggleBtn);
-        
+
         const actionGroup = document.createElement('div');
         actionGroup.className = 'fc-action-group';
         const btnCoding = document.createElement('button');
@@ -424,19 +449,19 @@ const InteropDebug = true;
         btnLoad.className = 'fc-action-btn';
         btnLoad.textContent = '📂 Load';
         btnLoad.onclick = () => showLoadMenu();
-        
+
         const btnIncognito = document.createElement('button');
         btnIncognito.id = 'fc-native-incognito';
         btnIncognito.className = 'fc-native-trigger fc-gemini-only';
-        
-        const incIcon = document.createElement('span'); 
-        incIcon.className = 'fc-icon'; 
+
+        const incIcon = document.createElement('span');
+        incIcon.className = 'fc-icon';
         incIcon.textContent = '⦙💬⦙';
         btnIncognito.appendChild(incIcon);
         btnIncognito.onclick = passThroughClick;
-        
+
         actionGroup.appendChild(btnCoding); actionGroup.appendChild(btnSave); actionGroup.appendChild(btnLoad); actionGroup.appendChild(btnIncognito);
-        
+
         menubar.appendChild(leftGroup);
         menubar.appendChild(centerContainer);
         menubar.appendChild(actionGroup);
